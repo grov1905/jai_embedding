@@ -1,41 +1,46 @@
-#modal_fast.py
 import modal
 import logging
-#import os
-import modal
-
+from sentence_transformers import SentenceTransformer
 
 app = modal.App(
-    name="jai-embedding-app"  # Solo el nombre es parámetro válido en el constructor
+    name="jai-embedding-app"
 )
 logger = logging.getLogger(__name__)
 
-# Corregimos la imagen para evitar conflictos de versiones
 image = (
-    modal.Image.debian_slim(python_version="3.11")  # Es buena práctica fijar la versión de Python
+    modal.Image.debian_slim(python_version="3.11")
     .pip_install(
-        "sentence-transformers==2.7.0", # Una versión reciente y estable
-        "torch==2.3.0", # Compatible con la anterior
-        "numpy<2.0"  # ¡Esta es la corrección clave! Forzamos una versión compatible.
+        "torch==2.2.2",
+        "transformers==4.38.2",
+        "sentence-transformers==2.7.0",
+        "numpy~=1.26.4",
     )
 )
 
-@app.function(
+# Convertimos la función en una clase para cargar el modelo una sola vez
+@app.cls(
     image=image,
-    min_containers=0,
+    timeout=180,
     gpu="L4",
-    timeout=180
+    min_containers=0
+    # Mantiene el contenedor "caliente" por 120 segundos después de la última petición
+    # para evitar el cold start en llamadas seguidas.
+    #container_idle_timeout=120 
 )
-def fast_embedding(texts: list[str], model: str):
-    from sentence_transformers import SentenceTransformer
-    try:
-        model = SentenceTransformer(model, device="cuda")
-        return model.encode(
+class EmbeddingModel:
+    def __enter__(self):
+        # Esta parte se ejecuta UNA SOLA VEZ cuando el contenedor arranca.
+        logger.info("Cargando el modelo en la GPU...")
+        self.model = SentenceTransformer("BAAI/bge-large-en-v1.5", device="cuda")
+        logger.info("Modelo cargado exitosamente.")
+
+    @modal.method()
+    def generate(self, texts: list[str]):
+        # Este método se llama en cada petición y reutiliza el modelo ya cargado.
+        logger.info(f"Generando embeddings para {len(texts)} textos.")
+        return self.model.encode(
             texts,
             normalize_embeddings=True,
-            batch_size=64, 
+            batch_size=64,
             convert_to_tensor=False
         ).tolist()
-    except Exception as e:
-        logger.error(f"Embedding generation failed: {str(e)}")
-        raise
