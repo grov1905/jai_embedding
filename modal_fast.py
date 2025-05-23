@@ -10,11 +10,13 @@ app = modal.App(
 )
 logger = logging.getLogger(__name__)
 
+# Corregimos la imagen para evitar conflictos de versiones
 image = (
-    modal.Image.debian_slim()
+    modal.Image.debian_slim(python_version="3.11")  # Es buena práctica fijar la versión de Python
     .pip_install(
-        "sentence-transformers==2.6.1",  # Versión fija
-        "torch==2.2.1"  # Versión CUDA
+        "sentence-transformers==2.7.0", # Una versión reciente y estable
+        "torch==2.3.0", # Compatible con la anterior
+        "numpy<2.0"  # ¡Esta es la corrección clave! Forzamos una versión compatible.
     )
 )
 
@@ -22,7 +24,7 @@ image = (
     image=image,
     min_containers=0,
     gpu="L4",
-    timeout=30
+    timeout=180
 )
 def fast_embedding(texts: list[str], model: str):
     from sentence_transformers import SentenceTransformer

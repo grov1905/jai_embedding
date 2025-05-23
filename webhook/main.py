@@ -27,7 +27,7 @@ async def generate_embeddings(request: EmbeddingRequest):
         # Busca la función ya desplegada en Modal
         # "jai-embedding-app" es el nombre de tu app en Modal
         # "fast_embedding" es el nombre de la función dentro de esa app
-        f = modal.Function.lookup("jai-embedding-app", "fast_embedding")
+        f = modal.Function.from_name("jai-embedding-app", "fast_embedding")
 
         # Llama a la función remota de forma asíncrona
         result = await f.remote.aio(request.texts, request.embedding_model)
