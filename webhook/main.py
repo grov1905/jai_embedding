@@ -11,9 +11,7 @@ from modal import App  # Importa igual que en modal_fast.py
 app = FastAPI()
 
 embedding_app = modal.App(
-    name="jai-embedding-app",
-    token=os.getenv("MODAL_TOKEN_ID"),
-    token_secret=os.getenv("MODAL_TOKEN_SECRET")
+    name="jai-embedding-app"  # Solo el nombre es parámetro válido en el constructor
 )
 
 
