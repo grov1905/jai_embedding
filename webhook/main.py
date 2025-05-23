@@ -24,13 +24,13 @@ class EmbeddingRequest(BaseModel):
 @app.post("/generate-embeddings")
 async def generate_embeddings(request: EmbeddingRequest):
     try:
-        # Ya no pasamos el nombre del modelo aquí, porque está definido en la clase de Modal
-        # 1. Busca la clase desplegada
-        embedding_model_cls = modal.Cls.from_name("jai-embedding-app", "EmbeddingModel")
-        # 2. Crea una instancia remota
-        model = embedding_model_cls()
-        # 3. Llama al método .generate()
-        result = await model.generate.remote.aio(request.texts)
+        # Busca la función ya desplegada en Modal
+        # "jai-embedding-app" es el nombre de tu app en Modal
+        # "fast_embedding" es el nombre de la función dentro de esa app
+        f = modal.Function.from_name("jai-embedding-app", "fast_embedding")
+
+        # Llama a la función remota de forma asíncrona
+        result = await f.remote.aio(request.texts, request.embedding_model)
         
         return {"embeddings": result}
     except Exception as e:
