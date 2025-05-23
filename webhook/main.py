@@ -1,25 +1,19 @@
-#webhook/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import modal
 import logging
 from typing import List
-#from dotenv import load_dotenv
 import os
-from modal import App  # Importa igual que en modal_fast.py
+
+# Configura las credenciales de Modal (muy importante en Railway)
+# Asegúrate de haber configurado las variables de entorno en Railway:
+# MODAL_TOKEN_ID y MODAL_TOKEN_SECRET
+if "MODAL_TOKEN_ID" not in os.environ or "MODAL_TOKEN_SECRET" not in os.environ:
+    raise RuntimeError("Las variables de entorno de Modal (MODAL_TOKEN_ID, MODAL_TOKEN_SECRET) no están configuradas.")
+
 
 app = FastAPI()
 
-# Solución 1: Importar directamente (si están en el mismo paquete)
-try:
-    from modal_fast import fast_embedding
-    embedding_app = modal.App(name="jai-embedding-app")
-    embedding_app.function(fast_embedding)  # Registra la función
-except ImportError:
-    # Solución 2: Si no se puede importar, usa lookup
-    embedding_app = modal.App(name ="jai-embedding-app")
-
-# Clients Modal
 logger = logging.getLogger(__name__)
 
 class EmbeddingRequest(BaseModel):
@@ -27,45 +21,18 @@ class EmbeddingRequest(BaseModel):
     embedding_model: str = "BAAI/bge-large-en-v1.5"  # Modelo por defecto
 
 
-
 @app.post("/generate-embeddings")
 async def generate_embeddings(request: EmbeddingRequest):
     try:
+        # Busca la función ya desplegada en Modal
+        # "jai-embedding-app" es el nombre de tu app en Modal
+        # "fast_embedding" es el nombre de la función dentro de esa app
+        f = modal.Function.lookup("jai-embedding-app", "fast_embedding")
 
-        result = await embedding_app.fast_embedding.remote.aio(request.texts, request.embedding_model)
+        # Llama a la función remota de forma asíncrona
+        result = await f.remote.aio(request.texts, request.embedding_model)
+        
         return {"embeddings": result}
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    
-
-
-# Configuración
-#MAX_DIRECT_PROCESSING = 50  # Máximo chunks para procesamiento inmediato
-
-
-#@app.post("/generate-embeddings")
-#async def generate_embeddings(request: EmbeddingRequest):
- #   try:
-        # Pequeñas cantidades: procesamiento inmediato
-        #if len(request.texts) <= MAX_DIRECT_PROCESSING:
-  #          fn = embedding_app.function("fast_embedding")
-  #          result = await fn.remote.aio(request.texts, request.model)
-  #          #return {"method": "immediate", "embeddings": result}
-  #          return {"embeddings": result}
-    
-        # Grandes volúmenes: encolar
-        #embedding_app.queue.put({
-        #    "texts": request.texts,
-        #    "model": request.model,
-        #    "batch_id": f"batch_{len(request.texts)}_{hash(tuple(request.texts))}"
-        #})
-        #return {
-        #    "method": "queued",
-        #    "batch_id": f"batch_{len(request.texts)}_{hash(tuple(request.texts))}",
-        #    "estimated_time": f"{len(request.texts)*0.01:.2f} seconds"
-        #}
-   # except Exception as e:
-   #     logger.error(f"Error processing request: {str(e)}")
-   #     raise HTTPException(status_code=500, detail=str(e))
-    
