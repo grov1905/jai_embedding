@@ -24,8 +24,9 @@ async def generate_embeddings(request: EmbeddingRequest):
         #if len(request.texts) <= MAX_DIRECT_PROCESSING:
             fn = embedding_app.function("fast_embedding")
             result = await fn.remote.aio(request.texts, request.model)
-            return {"method": "immediate", "embeddings": result}
-        
+            #return {"method": "immediate", "embeddings": result}
+            return {"embeddings": result}
+    
         # Grandes volúmenes: encolar
         #embedding_app.queue.put({
         #    "texts": request.texts,
