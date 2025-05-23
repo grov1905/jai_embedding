@@ -11,8 +11,8 @@ from modal import App  # Importa igual que en modal_fast.py
 app = FastAPI()
 
 embedding_app = modal.App(
-    app_id=os.getenv("MODAL_APP_ID"),
-    token_id=os.getenv("MODAL_TOKEN_ID"),
+    name="jai-embedding-app",
+    token=os.getenv("MODAL_TOKEN_ID"),
     token_secret=os.getenv("MODAL_TOKEN_SECRET")
 )
 
@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingRequest(BaseModel):
     texts: List[str]  # Lista de chunks
-    model: str = "BAAI/bge-large-en-v1.5"  # Modelo por defecto
+    embedding_model: str = "BAAI/bge-large-en-v1.5"  # Modelo por defecto
 
 
 @app.post("/generate-embeddings")
 async def generate_embeddings(request: EmbeddingRequest):
     try:
-        result = await embedding_app.fast_embedding.remote.aio(request.texts, request.model)
+        result = await embedding_app.fast_embedding.remote.aio(request.texts, request.embedding_model)
         return {"embeddings": result}
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
