@@ -4,7 +4,10 @@ import logging
 #import os
 import modal
 
-app = modal.App("jai-embedding-app")
+
+app = modal.App(
+    name="jai-embedding-app"  # Solo el nombre es parámetro válido en el constructor
+)
 logger = logging.getLogger(__name__)
 
 image = (

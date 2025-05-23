@@ -10,13 +10,16 @@ from modal import App  # Importa igual que en modal_fast.py
 
 app = FastAPI()
 
-embedding_app = modal.App(
-    name="jai-embedding-app"  # Solo el nombre es parámetro válido en el constructor
-)
-
+# Solución 1: Importar directamente (si están en el mismo paquete)
+try:
+    from modal_fast import fast_embedding
+    embedding_app = modal.App(name="jai-embedding-app")
+    embedding_app.function(fast_embedding)  # Registra la función
+except ImportError:
+    # Solución 2: Si no se puede importar, usa lookup
+    embedding_app = modal.App(name ="jai-embedding-app")
 
 # Clients Modal
-
 logger = logging.getLogger(__name__)
 
 class EmbeddingRequest(BaseModel):
@@ -24,9 +27,11 @@ class EmbeddingRequest(BaseModel):
     embedding_model: str = "BAAI/bge-large-en-v1.5"  # Modelo por defecto
 
 
+
 @app.post("/generate-embeddings")
 async def generate_embeddings(request: EmbeddingRequest):
     try:
+
         result = await embedding_app.fast_embedding.remote.aio(request.texts, request.embedding_model)
         return {"embeddings": result}
     except Exception as e:
