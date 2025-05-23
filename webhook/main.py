@@ -21,7 +21,7 @@ class EmbeddingRequest(BaseModel):
     embedding_model: str = "BAAI/bge-large-en-v1.5"  # Modelo por defecto
 
 
-@app.post("/generate-embeddings")
+@app.post("/api/v1/embeddings/generate")
 async def generate_embeddings(request: EmbeddingRequest):
     try:
         # Busca la función ya desplegada en Modal
