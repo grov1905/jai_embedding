@@ -1,24 +1,28 @@
 #modal_fast.py
 import modal
 import logging
-import os
+#import os
 import modal
 
 app = modal.App("jai-embedding-app")
 logger = logging.getLogger(__name__)
 
-image = modal.Image.debian_slim().pip_install("sentence-transformers", "torch")
-
+image = (
+    modal.Image.debian_slim()
+    .pip_install(
+        "sentence-transformers==2.6.1",  # Versión fija
+        "torch==2.2.1"  # Versión CUDA
+    )
+)
 
 @app.function(
     image=image,
-    min_containers=int(os.getenv("MODAL_MIN_CONTAINERS", "0")),
+    min_containers=0,
     gpu="L4",
     timeout=30
 )
 def fast_embedding(texts: list[str], model: str):
     from sentence_transformers import SentenceTransformer
-
     try:
         model = SentenceTransformer(model, device="cuda")
         return model.encode(
