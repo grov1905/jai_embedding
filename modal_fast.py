@@ -2,9 +2,9 @@
 import modal
 import logging
 import os
-from modal import App
+import modal
 
-app = App("jai-embedding-app")  # Usa la clase App directamente
+app = modal.App("jai-embedding-app")
 logger = logging.getLogger(__name__)
 
 image = modal.Image.debian_slim().pip_install("sentence-transformers", "torch")
@@ -12,7 +12,7 @@ image = modal.Image.debian_slim().pip_install("sentence-transformers", "torch")
 
 @app.function(
     image=image,
-    keep_warm=int(os.getenv("MODAL_MIN_CONTAINERS", "0")),
+    min_containers=int(os.getenv("MODAL_MIN_CONTAINERS", "0")),
     gpu="L4",
     timeout=30
 )

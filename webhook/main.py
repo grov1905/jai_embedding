@@ -11,8 +11,8 @@ from modal import App  # Importa igual que en modal_fast.py
 #load_dotenv()  # Carga variables desde .env
 
 app = FastAPI()
-embedding_app = App("jai-embedding-app")  # Mismo nombre que en modal_fast.py
-
+# Clients Modal
+embedding_app = modal.App("jai-embedding-app")
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +20,11 @@ class EmbeddingRequest(BaseModel):
     texts: List[str]  # Lista de chunks
     model: str = "BAAI/bge-large-en-v1.5"  # Modelo por defecto
 
-# Clients Modal
-embedding_app = modal.App("jai-embedding-app")
 
 @app.post("/generate-embeddings")
 async def generate_embeddings(request: EmbeddingRequest):
     try:
-        fn = embedding_app.functions["fast_embedding"]  # Usa corchetes, no paréntesis
+        fn = embedding_app.function("fast_embedding")
         if not fn:
             raise HTTPException(status_code=500, detail="Function not found")
         result = await fn.remote.aio(request.texts, request.model)
