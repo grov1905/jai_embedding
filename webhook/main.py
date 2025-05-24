@@ -1,4 +1,4 @@
-# webhook/main.py - VERSIÓN CORREGIDA
+# webhook/main.py - VERSIÓN FINAL CORREGIDA
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import modal
@@ -25,13 +25,11 @@ async def generate_embeddings(request: EmbeddingRequest):
         # 1. Busca la clase desplegada
         embedding_model_cls = modal.Cls.from_name("jai-embedding-app", "EmbeddingModel")
         
-        # 2. OPCIÓN A: Usar context manager (RECOMENDADO)
-        with embedding_model_cls() as model:
-            result = await model.generate.remote.aio(request.texts)
+        # 2. Crear instancia remota (Modal ejecuta setup() automáticamente)
+        model = embedding_model_cls()
         
-        # 2. OPCIÓN B: Alternativa sin context manager
-        # model = embedding_model_cls()
-        # result = await model.generate.remote.aio(request.texts)
+        # 3. Generar embeddings
+        result = await model.generate.remote.aio(request.texts)
         
         logger.info(f"Embeddings generados exitosamente para {len(request.texts)} textos")
         return {"embeddings": result}
@@ -39,3 +37,24 @@ async def generate_embeddings(request: EmbeddingRequest):
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health():
+    """Endpoint de salud para verificar que el servicio está funcionando."""
+    try:
+        # Verificar conexión con Modal
+        embedding_model_cls = modal.Cls.from_name("jai-embedding-app", "EmbeddingModel")
+        model = embedding_model_cls()
+        health_status = await model.health_check.remote.aio()
+        
+        return {
+            "status": "healthy",
+            "modal_connection": "ok",
+            "model_status": health_status
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return {
+            "status": "unhealthy", 
+            "error": str(e)
+        }
